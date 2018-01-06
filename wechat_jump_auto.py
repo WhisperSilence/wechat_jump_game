@@ -96,16 +96,10 @@ def jump(distance):
 
 
 def find_piece_and_board(im):
-    '''
-    寻找关键坐标
-    '''
     w, h = im.size
-
-    piece_x_sum = 0
-    piece_x_c = 0
-    piece_y_max = 0
     board_x = 0
     board_y = 0
+    x_number = 0
     scan_x_border = int(w / 8)  # 扫描棋子时的左右边界
     scan_start_y = 0  # 扫描的起始 y 坐标
     im_pixel = im.load()
@@ -122,20 +116,34 @@ def find_piece_and_board(im):
             break
     print('scan_start_y: {}'.format(scan_start_y))
 
-    # 从 scan_start_y 开始往下扫描，棋子应位于屏幕上半部分，这里暂定不超过 2/3
+    piece_x_sum = 0
+    piece_x_c = 0
+    piece_x = 0
     for i in range(scan_start_y, int(h * 2 / 3)):
+        if piece_x:
+            break;
         for j in range(scan_x_border, w - scan_x_border):  # 横坐标方面也减少了一部分扫描开销
             pixel = im_pixel[j, i]
-            # 根据棋子的最低行的颜色判断，找最后一行那些点的平均值，这个颜色这样应该 OK，暂时不提出来
-            if (50 < pixel[0] < 60) and (53 < pixel[1] < 63) and (95 < pixel[2] < 110):
+            if (40 < pixel[0] < 55) and (40 < pixel[1] < 55) and (55 < pixel[2] < 75):
                 piece_x_sum += j
                 piece_x_c += 1
-                piece_y_max = max(i, piece_y_max)
-
-    if not all((piece_x_sum, piece_x_c)):
-        return 0, 0, 0, 0
-    piece_x = int(piece_x_sum / piece_x_c)
-    piece_y = piece_y_max - piece_base_height_1_2  # 上移棋子底盘高度的一半
+        if piece_x_c:
+            piece_x = piece_x_sum/piece_x_c
+    
+    piece_y_sum = 0
+    piece_y_c = 0
+    piece_y = 0
+    for j in range(piece_x - piece_body_width/2 - 10 , piece_x + piece_body_width):
+        if piece_y:
+            break;
+        for i in range(scan_start_y, int(h * 2 / 3)):
+            pixel = im_pixel[j, i]
+            if (40 < pixel[0] < 55) and (40 < pixel[1] < 55) and (55 < pixel[2] < 75):
+                piece_y_sum += i
+                piece_y_c += 1
+        if piece_y_c:
+            piece_y = piece_y_sum/piece_y_c
+            
 
     # 限制棋盘扫描的横坐标，避免音符 bug
     if piece_x < w/2:
@@ -164,6 +172,7 @@ def find_piece_and_board(im):
                 board_x_c += 1
         if board_x_sum:
             board_x = board_x_sum / board_x_c
+    print('board_x={}'.format(board_x))
     last_pixel = im_pixel[board_x, i]
 
     # 从上顶点往下 +274 的位置开始向上找颜色与上顶点一样的点，为下顶点
@@ -172,7 +181,22 @@ def find_piece_and_board(im):
         pixel = im_pixel[board_x, k]
         if abs(pixel[0] - last_pixel[0]) + abs(pixel[1] - last_pixel[1]) + abs(pixel[2] - last_pixel[2]) < 10:
             break
-    board_y = int((i+k) / 2)
+    board_y_temp = int((i+k) / 2)
+    
+    
+    board_y_sum = 0
+    board_y_c = 0
+    for j in range(int(board_x_start), int(board_x_end)):
+        if board_y != 0:
+            break;
+        for i in range(int(board_y_temp - 20), int(board_y_temp + 20)):
+            pixel = im_pixel[j, i]
+            if abs(pixel[0] - last_pixel[0]) + abs(pixel[1] - last_pixel[1]) + abs(pixel[2] - last_pixel[2]) == 0:
+                board_y_sum += i
+                board_y_c += 1
+        if board_y_c:
+            print('board_y_c={}'.format(board_y_c))
+            board_y = board_y_sum/board_y_c
 
     # 如果上一跳命中中间，则下个目标中心会出现 r245 g245 b245 的点，利用这个属性弥补上一段代码可能存在的判断错误
     # 若上一跳由于某种原因没有跳到正中间，而下一跳恰好有无法正确识别花纹，则有可能游戏失败，由于花纹面积通常比较大，失败概率较低
