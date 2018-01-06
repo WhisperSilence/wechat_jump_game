@@ -133,7 +133,7 @@ def find_piece_and_board(im):
     piece_y_sum = 0
     piece_y_c = 0
     piece_y = 0
-    for j in range(piece_x - piece_body_width/2 - 10 , piece_x + piece_body_width):
+    for j in range(int(piece_x - piece_body_width/2 - 10) , int(piece_x + piece_body_width)):
         if piece_y:
             break;
         for i in range(scan_start_y, int(h * 2 / 3)):
@@ -172,7 +172,6 @@ def find_piece_and_board(im):
                 board_x_c += 1
         if board_x_sum:
             board_x = board_x_sum / board_x_c
-    print('board_x={}'.format(board_x))
     last_pixel = im_pixel[board_x, i]
 
     # 从上顶点往下 +274 的位置开始向上找颜色与上顶点一样的点，为下顶点
@@ -195,7 +194,6 @@ def find_piece_and_board(im):
                 board_y_sum += i
                 board_y_c += 1
         if board_y_c:
-            print('board_y_c={}'.format(board_y_c))
             board_y = board_y_sum/board_y_c
 
     # 如果上一跳命中中间，则下个目标中心会出现 r245 g245 b245 的点，利用这个属性弥补上一段代码可能存在的判断错误
