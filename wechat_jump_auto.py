@@ -80,7 +80,7 @@ def jump(distance):
     '''
     跳跃一定的距离
     '''
-    press_time = distance * press_coefficient
+    press_time = distance * press_coefficient * 0.99
     press_time = max(press_time, 200)   # 设置 200ms 是最小的按压时间
     press_time = int(press_time)
     cmd = 'adb shell input swipe {x1} {y1} {x2} {y2} {duration}'.format(
@@ -161,7 +161,7 @@ def find_piece_and_board(im):
 
     for i in range(int(board_y_start), int(board_y_end)):
         last_pixel = im_pixel[0, i]
-        if board_x or board_y:
+        if board_x:
             break
         board_x_sum = 0
         board_x_c = 0
@@ -196,7 +196,7 @@ def find_piece_and_board(im):
             break;
         for i in range(int(board_y_temp - 20), int(board_y_temp + 20)):
             pixel = im_pixel[j, i]
-            if abs(pixel[0] - last_pixel[0]) + abs(pixel[1] - last_pixel[1]) + abs(pixel[2] - last_pixel[2]) == 0:
+            if (abs(pixel[0] - last_pixel[0]) + abs(pixel[1] - last_pixel[1]) + abs(pixel[2] - last_pixel[2])) < 5:
                 board_y_sum += i
                 board_y_c += 1
         if board_y_c:
@@ -204,6 +204,7 @@ def find_piece_and_board(im):
 
     # 如果上一跳命中中间，则下个目标中心会出现 r245 g245 b245 的点，利用这个属性弥补上一段代码可能存在的判断错误
     # 若上一跳由于某种原因没有跳到正中间，而下一跳恰好有无法正确识别花纹，则有可能游戏失败，由于花纹面积通常比较大，失败概率较低
+    '''
     for l in range(i, i+200):
         pixel = im_pixel[board_x, l]
         if abs(pixel[0] - 245) + abs(pixel[1] - 245) + abs(pixel[2] - 245) == 0:
@@ -212,7 +213,8 @@ def find_piece_and_board(im):
             if (board_y - l)<50:
                 board_y = l+10
                 break
-
+    '''
+    
     if not all((board_x, board_y)):
         return 0, 0, 0, 0
 
@@ -257,6 +259,9 @@ def main():
     '''
     主函数
     '''
+    pressTime = 0
+    jumpDistance = 0
+    
     op = yes_or_no('请确保手机打开了 ADB 并连接了电脑，然后打开跳一跳并【开始游戏】后再用本程序，确定开始？')
     if not op:
         print('bye')
@@ -268,13 +273,19 @@ def main():
     i, next_rest, next_rest_time = 0, random.randrange(3, 10), random.randrange(5, 10)
     while True:
         pull_screenshot()
+        time.sleep(random.uniform(0.2, 0.5))
         im = Image.open('./autojump.png')
         # 获取棋子和 board 的位置
         piece_x, piece_y, board_x, board_y = find_piece_and_board(im)
         ts = int(time.time())
-        print(ts, piece_x, piece_y, board_x, board_y)
+        # print(ts, piece_x, piece_y, board_x, board_y)
+        if piece_x==0 or piece_y==0 or board_x==0 or board_y==0:
+            continue
+            
         set_button_position(im)
-        jump(math.sqrt((board_x - piece_x) ** 2 + (board_y - piece_y) ** 2))
+        jumpDistance = math.sqrt((board_x - piece_x) ** 2 + (board_y - piece_y) ** 2)
+        pressTime = jump(jumpDistance)
+        print(ts, piece_x, piece_y, board_x, board_y, jumpDistance, pressTime)
         if debug_switch:
             debug.save_debug_screenshot(ts, im, piece_x, piece_y, board_x, board_y)
             debug.backup_screenshot(ts)
@@ -288,6 +299,7 @@ def main():
             print('\n继续')
             i, next_rest, next_rest_time = 0, random.randrange(30, 100), random.randrange(10, 60)
         time.sleep(random.uniform(0.9, 1.2))   # 为了保证截图的时候应落稳了，多延迟一会儿，随机值防 ban
+        input('按回车键继续...')
 
 
 if __name__ == '__main__':
