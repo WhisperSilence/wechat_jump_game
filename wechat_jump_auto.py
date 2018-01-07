@@ -299,7 +299,7 @@ def main():
             print('\n继续')
             i, next_rest, next_rest_time = 0, random.randrange(30, 100), random.randrange(10, 60)
         time.sleep(random.uniform(0.9, 1.2))   # 为了保证截图的时候应落稳了，多延迟一会儿，随机值防 ban
-        input('按回车键继续...')
+        # input('按回车键继续...')
 
 
 if __name__ == '__main__':
