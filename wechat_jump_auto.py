@@ -99,6 +99,10 @@ def find_piece_and_board(im):
     w, h = im.size
     board_x = 0
     board_y = 0
+    board_x_start = 0
+    board_x_end = 0
+    board_y_start = 0
+    board_y_end = 0
     x_number = 0
     scan_x_border = int(w / 8)  # 扫描棋子时的左右边界
     scan_start_y = 0  # 扫描的起始 y 坐标
@@ -145,6 +149,8 @@ def find_piece_and_board(im):
             piece_y = piece_y_sum/piece_y_c
             
 
+    board_y_start = int(h / 3)
+    board_y_end = piece_y
     # 限制棋盘扫描的横坐标，避免音符 bug
     if piece_x < w/2:
         board_x_start = piece_x
@@ -153,7 +159,7 @@ def find_piece_and_board(im):
         board_x_start = 0
         board_x_end = piece_x
 
-    for i in range(int(h / 3), int(h * 2 / 3)):
+    for i in range(int(board_y_start), int(board_y_end)):
         last_pixel = im_pixel[0, i]
         if board_x or board_y:
             break
@@ -182,10 +188,10 @@ def find_piece_and_board(im):
             break
     board_y_temp = int((i+k) / 2)
     
-    
+    # 根据切线法找出棋盘的y坐标
     board_y_sum = 0
     board_y_c = 0
-    for j in range(int(board_x_start), int(board_x_end)):
+    for j in range(int(board_x_start), int(board_x_end), 1):
         if board_y != 0:
             break;
         for i in range(int(board_y_temp - 20), int(board_y_temp + 20)):
@@ -201,8 +207,11 @@ def find_piece_and_board(im):
     for l in range(i, i+200):
         pixel = im_pixel[board_x, l]
         if abs(pixel[0] - 245) + abs(pixel[1] - 245) + abs(pixel[2] - 245) == 0:
-            board_y = l+10
-            break
+            
+            # 防止遇到棋盘也是上述颜色的bug
+            if (board_y - l)<50:
+                board_y = l+10
+                break
 
     if not all((board_x, board_y)):
         return 0, 0, 0, 0
